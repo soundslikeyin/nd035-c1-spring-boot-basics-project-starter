@@ -12,6 +12,10 @@ import java.util.List;
 
 @Service
 public class CredentialService {
+    String addCredentialFailMessage = "Adding credential was unsuccessful, please try again";
+    String updateCredentialFailMessage = "Credential update was unsuccessful, please try again";
+    String deleteCredentialFail = "Credential delete was unsuccessful, please try again";
+
     private CredentialMapper credentialMapper;
     private EncryptionService encryptionService;
 
@@ -32,12 +36,17 @@ public class CredentialService {
         return new CredentialDisplay(credential.getCredentialId(), credential.getUrl(), credential.getUsername(), credential.getPassword(), decryptedPassword, credential.getUserId());
     }
 
-    public int addCredential(Credential credential){
+    public void addCredential(Credential credential, Integer userId) throws Exception {
         String encodedKey = createEncodedKey();
         String encryptedPassword = encryptionService.encryptValue(credential.getPassword(), encodedKey);
-        return credentialMapper.insert(
-                new Credential(null, credential.getUrl(), credential.getUsername(), encodedKey, encryptedPassword, credential.getUserId())
-        );
+
+        Credential newCredential = new Credential(
+                null, credential.getUrl(), credential.getUsername(), encodedKey, encryptedPassword, userId);
+
+        int result = credentialMapper.insert(newCredential);
+        if (result < 1) {
+            throw new Exception(addCredentialFailMessage);
+        }
     }
 
     public Credential getCredential(Integer credentialId){
@@ -55,15 +64,24 @@ public class CredentialService {
         return allCredentialDisplay;
     }
 
-
-    public int updateCredential(Credential credential){
+    public void updateCredential(Credential credential, Integer userId) throws Exception{
         String encodedKey = createEncodedKey();
         String encryptedPassword = encryptionService.encryptValue(credential.getPassword(), encodedKey);
-        return credentialMapper.updateCredential(new Credential(credential.getCredentialId(), credential.getUrl(), credential.getUsername(), encodedKey, encryptedPassword, credential.getUserId()));
+
+        Credential newCredential = new Credential(
+                credential.getCredentialId(), credential.getUrl(), credential.getUsername(), encodedKey, encryptedPassword, userId);
+
+        int result = credentialMapper.updateCredential(newCredential);
+        if (result < 1) {
+            throw new Exception (updateCredentialFailMessage);
+        }
     }
 
-    public int deleteCredential(Integer credentialId){
-        return credentialMapper.deleteCredential(credentialId);
+    public void deleteCredential(Integer credentialId) throws Exception{
+        int result = credentialMapper.deleteCredential(credentialId);
+        if (result < 1) {
+            throw new Exception(deleteCredentialFail);
+        }
     }
 }
 
